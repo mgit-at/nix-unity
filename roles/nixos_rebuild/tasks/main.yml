@@ -1,24 +1,22 @@
 ---
-#- debug:
-#    msg: "{{ exported_vars }}"
-
 - name: Creates state directory
-  file:
-    path: "{{ loc_base }}"
+  ansible.builtin.file:
+    path: "{{ nixos_rebuild_loc_base }}"
+    mode: "0755"
     state: directory
   delegate_to: localhost
 
 - name: Write .gitignore file
   ansible.builtin.template:
     src: templates/ignore.j2
-    dest: "{{ loc_base }}/.gitignore"
+    dest: "{{ nixos_rebuild_loc_base }}/.gitignore"
     mode: "0655"
   delegate_to: localhost
 
 - name: Write variables to file
   ansible.builtin.template:
     src: templates/json.j2
-    dest: "{{ loc_json }}"
+    dest: "{{ nixos_rebuild_loc_json }}"
     mode: "0655"
   delegate_to: localhost
   no_log: true
@@ -26,30 +24,32 @@
 - name: Write deploy script to file
   ansible.builtin.template:
     src: templates/script.j2
-    dest: "{{ loc_script }}"
+    dest: "{{ nixos_rebuild_loc_script }}"
     mode: "0755"
   delegate_to: localhost
 
-- block:
-  - name: Deploy "{{ flake_url }}" to "{{ target_host }}"
-    ansible.builtin.shell: |
-      if ! [ -z "$NIXOS_SILENT" [; then
-        exec \
-          1> >(tee >(awk '{ system(""); print "[{{ flake_target }}] stdout:", $0; system(""); }' >> /dev/tty)) \
-          2> >(tee >(awk '{ system(""); print "[{{ flake_target }}] stderr:", $0; system(""); }' >> /dev/tty) >&2)
-      fi
+- name: Setup flake url
+  block:
+    - name: Deploy "{{ nixos_rebuild_flake_url }}"
+      ansible.builtin.shell: |
+        if ! [ -z "$NIXOS_SILENT" [; then
+          exec \
+            1> >(tee >(awk '{ system(""); print "[{{ nixos_rebuild_flake_target }}] stdout:", $0; system(""); }' >> /dev/tty)) \
+            2> >(tee >(awk '{ system(""); print "[{{ nixos_rebuild_flake_target }}] stderr:", $0; system(""); }' >> /dev/tty) >&2)
+        fi
 
-      {{ loc_script }}
-    delegate_to: localhost
-    register: nixos_rebuild
-    when: not ansible_check_mode
+        {{ nixos_rebuild_loc_script }}
+      delegate_to: localhost
+      changed_when: false
+      register: _nixos_rebuild
+      when: not ansible_check_mode
 
-  - name: Gather host facts again
-    setup:
+    - name: Gather host facts again
+      ansible.builtin.setup:
   rescue:
-   - fail:
-       msg: "NixOS Deployment {{ flake_url }} to {{ target_host }} failed"
-     delegate_to: localhost
-     name: >
-       NixOS Deployment {{ flake_url }} to {{ target_host }} failed:
-       {{ nixos_rebuild.stderr }}
+    - name: >
+        NixOS Deployment failed:
+        {{ _nixos_rebuild.stderr }}
+      ansible.builtin.fail:
+        msg: "NixOS Deployment failed for {{ nixos_rebuild_flake_url }}"
+      delegate_to: localhost

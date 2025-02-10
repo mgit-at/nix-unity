@@ -1,12 +1,9 @@
 ---
-flake_dir: "{{ playbook_dir }}"
-flake_target: "{{ inventory_hostname }}"
-flake_url: "{{ flake_dir }}#{{ flake_target }}"
-target_host: "{{ ansible_user }}@{{ ansible_host }}"
-exported_vars:
-  hostvars: "{{ hostvars[inventory_hostname] }}"
-  facts: "{{ ansible_facts }}"
+nixos_rebuild_flake_dir: "{{ playbook_dir }}"
+nixos_rebuild_flake_target: "{{ inventory_hostname }}"
+nixos_rebuild_flake_url: "{{ flake_dir }}#{{ flake_target }}"
+nixos_rebuild_target_host: "{{ ansible_user }}@{{ ansible_host }}"
 
-loc_base: "{{ playbook_dir }}/_nix_ansible"
-loc_json: "{{ loc_base }}/{{ flake_target }}.json"
-loc_script: "{{ loc_base }}/{{ flake_target }}.sh"
+nixos_rebuild_loc_base: "{{ playbook_dir }}/_nix_ansible"
+nixos_rebuild_loc_json: "{{ loc_base }}/{{ flake_target }}.json"
+nixos_rebuild_loc_script: "{{ loc_base }}/{{ flake_target }}.sh"
