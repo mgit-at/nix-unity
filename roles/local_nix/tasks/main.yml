@@ -2,42 +2,43 @@
 - name: Creates cache path
   ansible.builtin.file:
     path: "{{ cache_path }}"
+    mode: "0755"
     state: directory
   delegate_to: localhost
 
 - name: Check if nix-portable exists
   ansible.builtin.stat:
-    path: "{{ nix_portable }}"
-  register: stat_nix_portable
+    path: "{{ local_nix_nix_portable }}"
+  register: _stat_nix_portable
   delegate_to: localhost
 
 - name: Fetch GitHub release for nix-portable
-  uri:
-    url: "https://api.github.com/repos/DavHau/nix-portable/releases/tags/v{{ nix_portable_version }}"
+  ansible.builtin.uri:
+    url: "https://api.github.com/repos/DavHau/nix-portable/releases/tags/v{{ local_nix_portable_version }}"
     return_content: true
   register: json_reponse
   delegate_to: localhost
-  when: not stat_nix_portable.stat.exists
+  when: not _stat_nix_portable.stat.exists
 
 - name: Download nix-portable
-  get_url:
+  ansible.builtin.get_url:
     url: "{{ json_reponse.json.assets[0].browser_download_url }}"
-    dest: "{{ nix_portable }}"
+    dest: "{{ local_nix_portable }}"
     mode: "0755"
   delegate_to: localhost
-  when: not ansible_check_mode and not stat_nix_portable.stat.exists
+  when: not ansible_check_mode and not _stat_nix_portable.stat.exists
   check_mode: false
 
 - name: Check if nix-wrapper exists
   ansible.builtin.stat:
-    path: "{{ nix_wrapper }}"
-  register: stat_nix_wrapper
+    path: "{{ local_nix_wrapper }}"
+  register: _stat_nix_wrapper
   delegate_to: localhost
 
 - name: Install nix wrapper
   ansible.builtin.template:
     src: templates/nix-wrapper.j2
-    dest: "{{ nix_wrapper }}"
+    dest: "{{ local_nix_wrapper }}"
     mode: "0755"
   delegate_to: localhost
-  when: not stat_nix_wrapper.stat.exists
+  when: not _stat_nix_wrapper.stat.exists
